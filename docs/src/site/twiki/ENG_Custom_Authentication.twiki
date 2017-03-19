@@ -30,57 +30,51 @@ The following methods should be overridden by derived Authenticator.
 <verbatim>
 
    public void authenticate(URL url, AuthenticatedURL.Token token)
-			throws IOException, AuthenticationException {
+            throws IOException, AuthenticationException {
 
-		TheAuthenticatorConf conf = TheAuthenticatorConf();
+        TheAuthenticatorConf conf = TheAuthenticatorConf();
 
-		HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-		conn.setRequestMethod("OPTIONS");
+        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+        conn.setRequestMethod("OPTIONS");
 
-		//Depending on actual authenticationovide Custom Authentication to Oozie Server
+        // Depending on actual authentication provide Custom Authentication to Oozie Server
+        // mechanism, retrieve the cert string or token.
+        String encodedStr = URLEncoder.encode(aCertString, "UTF-8");
+        // set to cookie with a key that can be recognized later in the server side.
+        conn.addRequestProperty("Cookie", "NEWAUTH=" + encodedStr);
 
-Eclipse and IntelliJ can use directly MiniOozie Maven project files. MiniOozie project can be imported to
-Eclipse and IntelliJ as independent project.
+        // extract token from connection and set to token
+        AuthenticatedURL.extractToken(conn, token);
 
-overridden methods
-<verbatim>
-		 mechanism, retrieve the cert string or token.
-		String encodedStr = URLEncoder.encode(aCertString, "UTF-8");
-		// set to cookie with a key that can be recognized later in the server side.
-		conn.addRequestProperty("Cookie", "NEWAUTH=" + encodedStr);
-
-		// extract token from connection and set to token
-		AuthenticatedURL.extractToken(conn, token);
-
-	}
+    }
 </verbatim>
 
 The following shows an example of a singleton class which can be used at a class of Authenticator to set and get configuration which is required for authentication purpose.
 
 <verbatim>
-	public static class TheAuthenticatorConf {
-		private static final TheAuthenticatorConf instance = new TheAuthenticatorConf();
-		private final Map<String, String> map = new HashMap<String, String>();
+    public static class TheAuthenticatorConf {
+        private static final TheAuthenticatorConf instance = new TheAuthenticatorConf();
+        private final Map<String, String> map = new HashMap<String, String>();
 
-		private TheAuthenticatorConf() {
-		}
+        private TheAuthenticatorConf() {
+        }
 
-		public static TheAuthenticatorConf getInstance() {
-			return instance;
-		}
+        public static TheAuthenticatorConf getInstance() {
+            return instance;
+        }
 
-		public void put(String key, String value) {
-			map.put(key, value);
-		}
+        public void put(String key, String value) {
+            map.put(key, value);
+        }
 
-		public String get(String key) {
-			return map.get(key);
-		}
+        public String get(String key) {
+            return map.get(key);
+        }
 
-		public void clear() {
-			map.clear();
-		}
-	}
+        public void clear() {
+            map.clear();
+        }
+    }
 </verbatim>
 
 ---++ Provide Custom Authentication to Oozie Client
@@ -102,9 +96,9 @@ The following methods should be overridden by derived AuthenticationHandler.
     public AuthenticationToken authenticate(HttpServletRequest request, HttpServletResponse response)
             throws IOException, AuthenticationException {
 
-		// the certificate or token can be retrieved from request and verified.
+        // the certificate or token can be retrieved from request and verified.
 
-		// use the information from the legal certificate or token to create AuthenticationToken
+        // use the information from the legal certificate or token to create AuthenticationToken
         AuthenticationToken token = new AuthenticationToken(userName, principal, type);
 
         return token;
