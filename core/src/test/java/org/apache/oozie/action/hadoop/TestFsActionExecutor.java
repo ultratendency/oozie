@@ -241,6 +241,28 @@ public class TestFsActionExecutor extends ActionExecutorTestCase {
         ae.mkdir(context, path);
     }
 
+    public void testXAttrs() throws Exception{
+        FsActionExecutor ae = new FsActionExecutor();
+
+        FileSystem fs = getFileSystem();
+
+        Path path = new Path(getFsTestCaseDir(), "dir1");
+
+        Context context = createContext("<fs/>");
+
+        ae.mkdir(context,path);
+
+        assertTrue(fs.exists(path));
+
+        ae.mkdir(context,path);
+
+        String name = "user.a1";
+        byte[] value = {0x31, 0x32, 0x33};
+
+        ae.setXAttrs(context, path, name, value);
+
+    }
+
     public void testDelete() throws Exception {
         FsActionExecutor ae = new FsActionExecutor();
         FileSystem fs = getFileSystem();

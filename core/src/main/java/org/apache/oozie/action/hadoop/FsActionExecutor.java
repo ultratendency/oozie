@@ -34,6 +34,7 @@ import org.apache.hadoop.fs.FileUtil;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.Trash;
 import org.apache.hadoop.fs.permission.FsPermission;
+import org.apache.hadoop.hdfs.DFSConfigKeys;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.security.AccessControlException;
 import org.apache.hadoop.security.UserGroupInformation;
@@ -223,6 +224,18 @@ public class FsActionExecutor extends ActionExecutor {
                                         chgrp(context, fsConf, nameNodePath, path, context.getWorkflow().getUser(),
                                                 group, dirFiles, recursive);
                                     }
+                                    else{
+                                        if(command.equals("xattrs")){
+                                            if(DFSConfigKeys.DFS_NAMENODE_XATTRS_ENABLED_DEFAULT){
+                                                Path path = getPath(commandElement, "path");
+                                                String name = commandElement.getAttributeValue("name");
+                                                String str = commandElement.getAttributeValue("value");
+                                                byte[] value = str.getBytes();
+                                                setXAttrs(context, fsConf, nameNodePath, path, name, value );
+                                            }
+
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -355,6 +368,38 @@ public class FsActionExecutor extends ActionExecutor {
         catch (Exception ex) {
             throw convertException(ex);
         }
+    }
+
+
+    void setXAttrs(Context context, Path path,  String name, byte[] value) throws ActionExecutorException {
+        setXAttrs(context, null, null, path, name, value);
+    }
+
+
+    /**
+     * Set xattrs
+     *
+     * @param context
+     * @param path
+     * @throws ActionExecutorException
+     */
+    void setXAttrs(Context context, XConfiguration fsConf, Path nameNodePath, Path path, String name, byte[] value) throws ActionExecutorException{
+        try {
+            path = resolveToFullPath(nameNodePath, path, true);
+            FileSystem fs = getFileSystemFor(path, context, fsConf);
+
+            if(fs.exists(path)){
+                    fs.setXAttr(path, name, value);
+            }
+            else
+                throw new ActionExecutorException(ActionExecutorException.ErrorType.ERROR, "FS015",
+                        "xattrs, path [{0}] doesnt exist", path);
+
+        }
+        catch (Exception ex){
+            throw convertException(ex);
+        }
+
     }
 
     /**

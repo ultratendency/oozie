@@ -9,7 +9,7 @@
   with the License.  You may obtain a copy of the License at
 
        http://www.apache.org/licenses/LICENSE-2.0
-
+  
   Unless required by applicable law or agreed to in writing, software
   distributed under the License is distributed on an "AS IS" BASIS,
   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -215,6 +215,7 @@
                 <xs:element name="chmod" type="workflow:CHMOD"/>
                 <xs:element name="touchz" type="workflow:TOUCHZ"/>
                 <xs:element name="chgrp" type="workflow:CHGRP"/>
+                <xs:element name="xattrs" type="workflow:XATTRS"/>
             </xs:choice>
         </xs:sequence>
     </xs:complexType>
@@ -294,6 +295,12 @@
     <xs:complexType name="MOVE">
         <xs:attribute name="source" type="xs:string" use="required"/>
         <xs:attribute name="target" type="xs:string" use="required"/>
+    </xs:complexType>
+
+    <xs:complexType name="XATTRS">
+        <xs:attribute name="path" type="xs:string" use="required"/>
+        <xs:attribute name="name" type="xs:string" use="required"/>
+        <xs:attribute name="value" type="xs:string" use="required"/>
     </xs:complexType>
 
     <xs:complexType name="CHMOD">
