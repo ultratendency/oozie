@@ -47,7 +47,7 @@ public class DateList {
 		rep.setFrequency(Integer.parseInt(args[2]));
 		rep.setTimeUnit(TimeUnit.valueOf(args[3]));
 		rep.setTimeZone(getTimeZone(args[4]));
-		Date date = null;
+        Date date;
 		int occurrence = 0;
 		StringBuilder dateList = new StringBuilder();
 		do {
@@ -59,16 +59,16 @@ public class DateList {
 				dateList.append(DATE_LIST_SEPARATOR);
 			}
 			dateList.append(formatDateUTC(date));
-		} while (date != null);
+        } while (true);
 
 		System.out.println("datelist :" + dateList+ ":");
 		//Passing the variable to WF that could be referred by subsequent actions
 		File file = new File(System.getProperty("oozie.action.output.properties"));
 		Properties props = new Properties();
 		props.setProperty("datelist", dateList.toString());
-		OutputStream os = new FileOutputStream(file);
-        	props.store(os, "");
-        	os.close();
+        try (OutputStream os = new FileOutputStream(file)) {
+            props.store(os, "");
+        }
 	}
 
 	//Utility methods
@@ -89,12 +89,8 @@ public class DateList {
 	private static Date parseDateUTC(String s) throws Exception {
 		return getISO8601DateFormat().parse(s);
 	}
+
 	private static String formatDateUTC(Date d) throws Exception {
 		return (d != null) ? getISO8601DateFormat().format(d) : "NULL";
 	}
-
-	private static String formatDateUTC(Calendar c) throws Exception {
-		return (c != null) ? formatDateUTC(c.getTime()) : "NULL";
-	}
-
 }

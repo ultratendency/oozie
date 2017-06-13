@@ -165,11 +165,15 @@ public class Repeatable {
 	}
 
 	public Date getBaseline() {
-		return baseline;
+        if (this.baseline == null) {
+            return null;
+        }
+
+        return new Date(baseline.getTime());
 	}
 
 	public void setBaseline(Date baseline) {
-		this.baseline = baseline;
+        this.baseline = new Date(baseline.getTime());
 	}
 
 	public TimeZone getTimeZone() {
