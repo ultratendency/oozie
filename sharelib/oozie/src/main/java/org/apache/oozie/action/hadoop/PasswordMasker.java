@@ -21,6 +21,7 @@ package org.apache.oozie.action.hadoop;
 import com.google.common.collect.Maps;
 
 import javax.annotation.Nonnull;
+import java.util.Locale;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -112,7 +113,7 @@ public class PasswordMasker {
     }
 
     private boolean isPasswordKey(String key) {
-        return key.toLowerCase().contains(PASSWORD_KEY);
+        return key.toLowerCase(Locale.getDefault()).contains(PASSWORD_KEY);
     }
 
     private boolean containsPasswordFragment(String maybePasswordFragments) {

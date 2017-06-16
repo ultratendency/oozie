@@ -16,17 +16,16 @@
  * limitations under the License.
  */
 
-
 package org.apache.oozie.action.hadoop;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.PrintWriter;
+import java.io.OutputStreamWriter;
+import java.io.PrintStream;
 import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.List;
@@ -114,11 +113,10 @@ public class ShellMain extends LauncherMain {
 
         int exitValue = p.waitFor();
         // Wait for both the thread to exit
-        if (thrArray != null) {
-            for (Thread thr : thrArray) {
-                thr.join();
-            }
+        for (Thread thr : thrArray) {
+            thr.join();
         }
+
         System.out.println("Exit code of the Shell command " + exitValue);
         System.out.println("<<< Invocation of Shell command completed <<<");
         System.out.println();
@@ -169,15 +167,15 @@ public class ShellMain extends LauncherMain {
                 CONF_OOZIE_SHELL_SETUP_HADOOP_CONF_DIR_LOG4J_CONTENT);
         File log4jPropertiesFile = new File(confDir, LOG4J_PROPERTIES);
         FileOutputStream log4jFileOutputStream = new FileOutputStream(log4jPropertiesFile, false);
-        PrintWriter log4jWriter = new PrintWriter(log4jFileOutputStream);
-        BufferedReader lineReader = new BufferedReader(new StringReader(log4jContents));
-        String line = lineReader.readLine();
-        while (line != null) {
-            // Trim the line (both preceding and trailing whitespaces) before writing it as a line in file
-            log4jWriter.println(line.trim());
-            line = lineReader.readLine();
+        try (PrintStream log4jWriter = new PrintStream(log4jFileOutputStream, false, "UTF-8")) {
+            BufferedReader lineReader = new BufferedReader(new StringReader(log4jContents));
+            String line = lineReader.readLine();
+            while (line != null) {
+                // Trim the line (both preceding and trailing whitespaces) before writing it as a line in file
+                log4jWriter.println(line.trim());
+                line = lineReader.readLine();
+            }
         }
-        log4jWriter.close();
     }
 
     /**
@@ -205,7 +203,7 @@ public class ShellMain extends LauncherMain {
      * @return command and list of args
      */
     private ArrayList<String> getCmdList(String exec, String[] args) {
-        ArrayList<String> cmdArray = new ArrayList<String>();
+        ArrayList<String> cmdArray = new ArrayList<>();
         cmdArray.add(exec); // Main executable
         for (String arg : args) { // Adding rest of the arguments
             cmdArray.add(arg);
@@ -225,8 +223,8 @@ public class ShellMain extends LauncherMain {
      */
     protected Thread[] handleShellOutput(Process p, boolean captureOutput)
             throws IOException {
-        BufferedReader input = new BufferedReader(new InputStreamReader(p.getInputStream()));
-        BufferedReader error = new BufferedReader(new InputStreamReader(p.getErrorStream()));
+        BufferedReader input = new BufferedReader(new InputStreamReader(p.getInputStream(), "UTF-8"));
+        BufferedReader error = new BufferedReader(new InputStreamReader(p.getErrorStream(), "UTF-8"));
 
         OutputWriteThread thrStdout = new OutputWriteThread(input, true, captureOutput);
         thrStdout.setDaemon(true);
@@ -243,7 +241,7 @@ public class ShellMain extends LauncherMain {
      * Thread to write output to LM stdout/stderr. Also write the content for
      * capture-output.
      */
-    class OutputWriteThread extends Thread {
+    static class OutputWriteThread extends Thread {
         BufferedReader reader = null;
         boolean isStdout = false;
         boolean needCaptured = false;
@@ -262,7 +260,7 @@ public class ShellMain extends LauncherMain {
             try {
                 if (needCaptured) {
                     File file = new File(System.getProperty(OUTPUT_PROPERTIES));
-                    os = new BufferedWriter(new FileWriter(file));
+                    os = new BufferedWriter((new OutputStreamWriter(new FileOutputStream(file), "UTF-8")));
                 }
                 while ((line = reader.readLine()) != null) {
                     if (isStdout) { // For stdout
@@ -338,7 +336,7 @@ public class ShellMain extends LauncherMain {
      * @return argument list
      */
     protected List<String> getShellArguments(Configuration actionConf) {
-        List<String> arguments = new ArrayList<String>();
+        List<String> arguments = new ArrayList<>();
         String[] scrArgs = ActionUtils.getStrings(actionConf, CONF_OOZIE_SHELL_ARGS);
         for (String scrArg : scrArgs) {
             arguments.add(scrArg);

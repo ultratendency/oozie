@@ -22,9 +22,9 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.StringWriter;
 import java.net.URL;
@@ -34,6 +34,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
@@ -73,7 +74,7 @@ public abstract class LauncherMain {
 
     public static final String TEZ_APPLICATION_TAGS = "tez.application.tags";
     public static final String SPARK_YARN_TAGS = "spark.yarn.tags";
-    protected static String[] HADOOP_SITE_FILES = new String[]
+    private static final String[] HADOOP_SITE_FILES = new String[]
             {"core-site.xml", "hdfs-site.xml", "mapred-site.xml", "yarn-site.xml"};
 
     /**
@@ -131,12 +132,12 @@ public abstract class LauncherMain {
     }
 
     protected static String getHadoopJobIds(String logFile, Pattern[] patterns) {
-        Set<String> jobIds = new LinkedHashSet<String>();
+        Set<String> jobIds = new LinkedHashSet<>();
         if (!new File(logFile).exists()) {
             System.err.println("Log file: " + logFile + "  not present. Therefore no Hadoop job IDs found.");
         }
         else {
-            try (BufferedReader br = new BufferedReader(new FileReader(logFile))) {
+            try (BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(logFile), "UTF-8"))) {
                 String line = br.readLine();
                 while (line != null) {
                     extractJobIDs(line, patterns, jobIds);
@@ -172,7 +173,7 @@ public abstract class LauncherMain {
         if (jobIds != null) {
             File externalChildIdsFile = new File(System.getProperty(EXTERNAL_CHILD_IDS));
             try (OutputStream externalChildIdsStream = new FileOutputStream(externalChildIdsFile)) {
-                externalChildIdsStream.write(jobIds.getBytes());
+                externalChildIdsStream.write(jobIds.getBytes("UTF-8"));
                 System.out.println("Hadoop Job IDs executed by " + name + ": " + jobIds);
                 System.out.println();
             } catch (IOException e) {
@@ -191,7 +192,7 @@ public abstract class LauncherMain {
 
     public static Set<ApplicationId> getChildYarnJobs(Configuration actionConf, ApplicationsRequestScope scope,
                                                       long startTime) {
-        Set<ApplicationId> childYarnJobs = new HashSet<ApplicationId>();
+        Set<ApplicationId> childYarnJobs = new HashSet<>();
         String tag = actionConf.get(CHILD_MAPREDUCE_JOB_TAGS);
         if (tag == null) {
             System.out.print("Could not find Yarn tags property " + CHILD_MAPREDUCE_JOB_TAGS);
@@ -391,13 +392,19 @@ public abstract class LauncherMain {
     protected void writeHadoopConfig(String actionXml, File basrDir) throws IOException {
         File actionXmlFile = new File(actionXml);
         System.out.println("Copying " + actionXml + " to " + basrDir + "/" + Arrays.toString(HADOOP_SITE_FILES));
-        basrDir.mkdirs();
-        File[] dstFiles = new File[HADOOP_SITE_FILES.length];
-        for (int i = 0; i < dstFiles.length; i++) {
-            dstFiles[i] = new File(basrDir, HADOOP_SITE_FILES[i]);
+        boolean directoryCreated = basrDir.mkdirs();
+
+        if (directoryCreated) {
+            File[] dstFiles = new File[HADOOP_SITE_FILES.length];
+
+            for (int i = 0; i < dstFiles.length; i++) {
+                dstFiles[i] = new File(basrDir, HADOOP_SITE_FILES[i]);
+            }
+
+            copyFileMultiplex(actionXmlFile, dstFiles);
         }
-        copyFileMultiplex(actionXmlFile, dstFiles);
     }
+
     /**
      * Print arguments to standard output stream. Mask out argument values to option with name 'password' in them.
      * @param banner source banner
@@ -413,7 +420,7 @@ public abstract class LauncherMain {
             }
             else {
                 System.out.println("             " + arg);
-                if (arg.toLowerCase().contains("password")) {
+                if (arg.toLowerCase(Locale.getDefault()).contains("password")) {
                     maskNextArg = true;
                 }
             }

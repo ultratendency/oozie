@@ -29,4 +29,56 @@
        <Method name="toString" />
        <Bug pattern="WMI_WRONG_MAP_ITERATOR" />
      </Match>
+
+     <!-- excluded to keep the code simple -->
+     <Match>
+       <Class name="org.apache.oozie.action.hadoop.HdfsOperations" />
+       <Method name="fileExists" />
+       <Bug pattern="SIC_INNER_SHOULD_BE_STATIC_ANON" />
+     </Match>
+
+     <!-- excluded to keep the code simple -->
+     <Match>
+       <Class name="org.apache.oozie.action.hadoop.HdfsOperations" />
+       <Method name="writeStringToFile" />
+       <Bug pattern="SIC_INNER_SHOULD_BE_STATIC_ANON" />
+     </Match>
+
+     <!-- excluded to keep the code simple -->
+     <Match>
+       <Class name="org.apache.oozie.action.hadoop.HdfsOperations" />
+       <Method name="readFileContents" />
+       <Bug pattern="SIC_INNER_SHOULD_BE_STATIC_ANON" />
+     </Match>
+
+     <!-- excluded due to upcoming deletion -->
+     <Match>
+       <Class name="org.apache.oozie.action.hadoop.LauncherMapper" />
+     </Match>
+
+     <!-- excluded due to upcoming deletion -->
+     <Match>
+       <Class name="org.apache.oozie.action.hadoop.LauncherSecurityManager" />
+     </Match>
+
+     <!-- excluded because the return value is not useful at all -->
+     <Match>
+       <Class name="org.apache.oozie.action.hadoop.OozieLauncherOutputCommitter" />
+       <Method name="&lt;init&gt;" />
+       <Bug pattern="RV_RETURN_VALUE_IGNORED_BAD_PRACTICE" />
+     </Match>
+
+     <!-- excluded to keep the code simple -->
+     <Match>
+       <Class name="org.apache.oozie.action.hadoop.OozieLauncherOutputFormat" />
+       <Method name="getRecordWriter" />
+       <Bug pattern="SIC_INNER_SHOULD_BE_STATIC_ANON" />
+     </Match>
+
+     <!-- excluded to keep the code simple -->
+     <Match>
+       <Class name="org.apache.oozie.action.hadoop.LocalFsOperations" />
+       <Method name="printContentsOfDir" />
+       <Bug pattern="SIC_INNER_SHOULD_BE_STATIC_ANON" />
+     </Match>
 </FindBugsFilter>

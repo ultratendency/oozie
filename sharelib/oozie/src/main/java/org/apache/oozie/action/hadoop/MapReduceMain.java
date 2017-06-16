@@ -81,9 +81,9 @@ public class MapReduceMain extends LauncherMain {
 
     protected void writeJobIdFile(File idFile, String jobId) throws IOException {
         // propagating job id back to Oozie
-        OutputStream os = new FileOutputStream(idFile);
-        os.write(jobId.getBytes());
-        os.close();
+        try (OutputStream os = new FileOutputStream(idFile)) {
+            os.write(jobId.getBytes("UTF-8"));
+        }
     }
 
     protected void addActionConf(JobConf jobConf, Configuration actionConf) {
