@@ -145,7 +145,8 @@ public class OozieDBImportCLI {
 
     private static void checkDBVersion(EntityManager entityManager, ZipFile zipFile) throws IOException {
         try {
-            String currentDBVersion = (String) entityManager.createNativeQuery("select data from OOZIE_SYS where name='db.version'").getSingleResult();
+            String currentDBVersion = (String) entityManager
+                    .createNativeQuery("select data from OOZIE_SYS where name='db.version'").getSingleResult();
             String dumpDBVersion = null;
             ZipEntry entry = zipFile.getEntry(OOZIEDB_SYS_INFO_JSON);
             BufferedReader reader = new BufferedReader(new InputStreamReader(zipFile.getInputStream(entry), "UTF-8"));
