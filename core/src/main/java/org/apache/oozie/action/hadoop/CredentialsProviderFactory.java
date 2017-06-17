@@ -25,6 +25,7 @@ import java.util.Map;
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.oozie.service.ConfigurationService;
+import org.apache.oozie.util.StringUtils;
 import org.apache.oozie.util.XLog;
 
 public class CredentialsProviderFactory {
@@ -48,7 +49,7 @@ public class CredentialsProviderFactory {
     private CredentialsProviderFactory() throws Exception {
         providerCache = new HashMap<>();
         for (String function : ConfigurationService.getStrings(CRED_KEY)) {
-            function = trim(function);
+            function = StringUtils.trim(function);
             LOG.debug("Creating Credential class for : " + function);
             String[] str = function.split("=");
             if (str.length > 0) {
@@ -97,20 +98,5 @@ public class CredentialsProviderFactory {
         LOG.debug("About to relogin from keytab");
         UserGroupInformation.getLoginUser().checkTGTAndReloginFromKeytab();
         LOG.debug("Relogin from keytab successful");
-    }
-
-    /**
-     * To trim string
-     *
-     * @param str
-     * @return trim string
-     */
-    public String trim(String str) {
-        if (str != null) {
-            str = str.replaceAll("\\n", "");
-            str = str.replaceAll("\\t", "");
-            str = str.trim();
-        }
-        return str;
     }
 }
