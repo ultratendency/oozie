@@ -24,7 +24,6 @@ import org.apache.commons.cli.GnuParser;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.HelpFormatter;
-import org.apache.commons.cli.UnrecognizedOptionException;
 
 import java.util.Arrays;
 import java.util.Map;
@@ -42,9 +41,9 @@ public class CLIParser {
 
     private String cliName;
     private String[] cliHelp;
-    private Map<String, Options> commands = new LinkedHashMap<String, Options>();
-    private Map<String, Boolean> commandWithArgs = new LinkedHashMap<String, Boolean>();
-    private Map<String, String> commandsHelp = new LinkedHashMap<String, String>();
+    private Map<String, Options> commands = new LinkedHashMap<>();
+    private Map<String, Boolean> commandWithArgs = new LinkedHashMap<>();
+    private Map<String, String> commandsHelp = new LinkedHashMap<>();
 
     /**
      * Create a parser.
@@ -162,7 +161,7 @@ public class CLIParser {
 
     /**
      * Print the help for the parser to standard output.
-     * 
+     *
      * @param commandLine the command line
      */
     public void showHelp(CommandLine commandLine) {
@@ -176,7 +175,7 @@ public class CLIParser {
         Set<String> commandsToPrint = commands.keySet();
         String[] args = commandLine.getArgs();
         if (args.length > 0 && commandsToPrint.contains(args[0])) {
-            commandsToPrint = new HashSet<String>();
+            commandsToPrint = new HashSet<>();
             commandsToPrint.add(args[0]);
         }
         for (String comm : commandsToPrint) {

@@ -61,7 +61,7 @@ public class AuthOozieClient extends XOozieClient {
      */
     public static final File AUTH_TOKEN_CACHE_FILE = new File(System.getProperty("user.home"), ".oozie-auth-token");
 
-    public static enum AuthType {
+    public enum AuthType {
         KERBEROS, SIMPLE
     }
 
@@ -107,7 +107,7 @@ public class AuthOozieClient extends XOozieClient {
     protected HttpURLConnection createConnection(URL url, String method) throws IOException, OozieClientException {
         boolean useAuthFile = System.getProperty(USE_AUTH_TOKEN_CACHE_SYS_PROP, "false").equalsIgnoreCase("true");
         AuthenticatedURL.Token readToken = null;
-        AuthenticatedURL.Token currentToken = null;
+        AuthenticatedURL.Token currentToken;
 
         // Read the token in from the file
         if (useAuthFile) {
@@ -288,8 +288,8 @@ public class AuthOozieClient extends XOozieClient {
                 return authClass.newInstance();
             }
             catch (IllegalArgumentException iae) {
-                throw new OozieClientException(OozieClientException.AUTHENTICATION, "Invalid options provided for auth: " + authOption
-                        + ", (" + AuthType.KERBEROS + " or " + AuthType.SIMPLE + " expected.)");
+                throw new OozieClientException(OozieClientException.AUTHENTICATION, "Invalid options provided for auth: "
+                        + authOption + ", (" + AuthType.KERBEROS + " or " + AuthType.SIMPLE + " expected.)");
             }
             catch (InstantiationException ex) {
                 throw new OozieClientException(OozieClientException.AUTHENTICATION,
@@ -338,7 +338,7 @@ public class AuthOozieClient extends XOozieClient {
      * @return the map for classes of Authenticator
      */
     protected Map<String, Class<? extends Authenticator>> getAuthenticators() {
-        Map<String, Class<? extends Authenticator>> authClasses = new HashMap<String, Class<? extends Authenticator>>();
+        Map<String, Class<? extends Authenticator>> authClasses = new HashMap<>();
         authClasses.put(AuthType.KERBEROS.toString(), KerberosAuthenticator.class);
         authClasses.put(AuthType.SIMPLE.toString(), PseudoAuthenticator.class);
         authClasses.put(null, KerberosAuthenticator.class);
@@ -353,5 +353,4 @@ public class AuthOozieClient extends XOozieClient {
     public String getAuthOption() {
         return authOption;
     }
-
 }
