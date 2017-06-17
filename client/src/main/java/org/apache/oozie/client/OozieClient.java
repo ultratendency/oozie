@@ -209,13 +209,13 @@ public class OozieClient {
         }
     }
 
-    public static enum SYSTEM_MODE {
+    public enum SYSTEM_MODE {
         NORMAL, NOWEBSERVICE, SAFEMODE
     }
 
-    private static final Set<String> COMPLETED_WF_STATUSES = new HashSet<String>();
-    private static final Set<String> COMPLETED_COORD_AND_BUNDLE_STATUSES = new HashSet<String>();
-    private static final Set<String> COMPLETED_COORD_ACTION_STATUSES = new HashSet<String>();
+    private static final Set<String> COMPLETED_WF_STATUSES = new HashSet<>();
+    private static final Set<String> COMPLETED_COORD_AND_BUNDLE_STATUSES = new HashSet<>();
+    private static final Set<String> COMPLETED_COORD_ACTION_STATUSES = new HashSet<>();
     static {
         COMPLETED_WF_STATUSES.add(WorkflowJob.Status.FAILED.toString());
         COMPLETED_WF_STATUSES.add(WorkflowJob.Status.KILLED.toString());
@@ -240,14 +240,13 @@ public class OozieClient {
 
     private int retryCount = 4;
 
-
     private String baseUrl;
     private String protocolUrl;
     private boolean validatedVersion = false;
     private JSONArray supportedVersions;
-    private final Map<String, String> headers = new HashMap<String, String>();
+    private final Map<String, String> headers = new HashMap<>();
 
-    private static final ThreadLocal<String> USER_NAME_TL = new ThreadLocal<String>();
+    private static final ThreadLocal<String> USER_NAME_TL = new ThreadLocal<>();
 
     /**
      * Allows to impersonate other users in the Oozie server. The current user
@@ -409,7 +408,7 @@ public class OozieClient {
         HttpURLConnection conn = createRetryableConnection(url, "GET");
 
         if (conn.getResponseCode() == HttpURLConnection.HTTP_OK) {
-            versions = (JSONArray) JSONValue.parse(new InputStreamReader(conn.getInputStream()));
+            versions = (JSONArray) JSONValue.parse(new InputStreamReader(conn.getInputStream(), "UTF-8"));
         }
         else {
             handleError(conn);
@@ -528,8 +527,7 @@ public class OozieClient {
         return (HttpURLConnection) new ConnectionRetriableClient(getRetryCount()) {
             @Override
             public Object doExecute(URL url, String method) throws IOException, OozieClientException {
-                HttpURLConnection conn = createConnection(url, method);
-                return conn;
+                return createConnection(url, method);
             }
         }.execute(url, method);
     }
@@ -607,9 +605,9 @@ public class OozieClient {
         @Override
         protected Map<String, String> call(HttpURLConnection conn) throws IOException, OozieClientException {
             if ((conn.getResponseCode() == HttpURLConnection.HTTP_OK)) {
-                Reader reader = new InputStreamReader(conn.getInputStream());
+                Reader reader = new InputStreamReader(conn.getInputStream(), "UTF-8");
                 JSONObject json = (JSONObject) JSONValue.parse(reader);
-                Map<String, String> map = new HashMap<String, String>();
+                Map<String, String> map = new HashMap<>();
                 for (Object key : json.keySet()) {
                     map.put((String)key, (String)json.get(key));
                 }
@@ -638,7 +636,7 @@ public class OozieClient {
     }
 
     static Map<String, String> prepareParams(String... params) {
-        Map<String, String> map = new LinkedHashMap<String, String>();
+        Map<String, String> map = new LinkedHashMap<>();
         for (int i = 0; i < params.length; i = i + 2) {
             map.put(params[i], params[i + 1]);
         }
@@ -714,7 +712,7 @@ public class OozieClient {
             conn.setRequestProperty("content-type", RestConstants.XML_CONTENT_TYPE);
             writeToXml(conf, conn.getOutputStream());
             if (conn.getResponseCode() == HttpURLConnection.HTTP_CREATED) {
-                JSONObject json = (JSONObject) JSONValue.parse(new InputStreamReader(conn.getInputStream()));
+                JSONObject json = (JSONObject) JSONValue.parse(new InputStreamReader(conn.getInputStream(), "UTF-8"));
                 return (String) json.get(JsonTags.JOB_ID);
             }
             if (conn.getResponseCode() != HttpURLConnection.HTTP_OK) {
@@ -769,9 +767,8 @@ public class OozieClient {
         protected JSONObject call(HttpURLConnection conn) throws IOException, OozieClientException {
             conn.setRequestProperty("content-type", RestConstants.XML_CONTENT_TYPE);
             if ((conn.getResponseCode() == HttpURLConnection.HTTP_OK)) {
-                Reader reader = new InputStreamReader(conn.getInputStream());
-                JSONObject json = (JSONObject) JSONValue.parse(reader);
-                return json;
+                Reader reader = new InputStreamReader(conn.getInputStream(), "UTF-8");
+                return (JSONObject) JSONValue.parse(reader);
             }
             else {
                 handleError(conn);
@@ -830,7 +827,7 @@ public class OozieClient {
             writeToXml(conf, conn.getOutputStream());
 
             if (conn.getResponseCode() == HttpURLConnection.HTTP_OK) {
-                JSONObject json = (JSONObject) JSONValue.parse(new InputStreamReader(conn.getInputStream()));
+                JSONObject json = (JSONObject) JSONValue.parse(new InputStreamReader(conn.getInputStream(), "UTF-8"));
                 JSONObject update = (JSONObject) json.get(JsonTags.COORD_UPDATE);
                 if (update != null) {
                     return (String) update.get(JsonTags.COORD_UPDATE_DIFF);
@@ -983,7 +980,7 @@ public class OozieClient {
         @Override
         protected WorkflowJob call(HttpURLConnection conn) throws IOException, OozieClientException {
             if ((conn.getResponseCode() == HttpURLConnection.HTTP_OK)) {
-                Reader reader = new InputStreamReader(conn.getInputStream());
+                Reader reader = new InputStreamReader(conn.getInputStream(), "UTF-8");
                 JSONObject json = (JSONObject) JSONValue.parse(reader);
                 return JsonToBean.createWorkflowJob(json);
             }
@@ -1002,7 +999,7 @@ public class OozieClient {
 
         protected JMSConnectionInfo call(HttpURLConnection conn) throws IOException, OozieClientException {
             if ((conn.getResponseCode() == HttpURLConnection.HTTP_OK)) {
-                Reader reader = new InputStreamReader(conn.getInputStream());
+                Reader reader = new InputStreamReader(conn.getInputStream(), "UTF-8");
                 JSONObject json = (JSONObject) JSONValue.parse(reader);
                 return JsonToBean.createJMSConnectionInfo(json);
             }
@@ -1022,7 +1019,7 @@ public class OozieClient {
         @Override
         protected WorkflowAction call(HttpURLConnection conn) throws IOException, OozieClientException {
             if ((conn.getResponseCode() == HttpURLConnection.HTTP_OK)) {
-                Reader reader = new InputStreamReader(conn.getInputStream());
+                Reader reader = new InputStreamReader(conn.getInputStream(), "UTF-8");
                 JSONObject json = (JSONObject) JSONValue.parse(reader);
                 return JsonToBean.createWorkflowAction(json);
             }
@@ -1043,7 +1040,7 @@ public class OozieClient {
         protected List<Map<String, String>> call(HttpURLConnection conn)
                 throws IOException, OozieClientException {
             if ((conn.getResponseCode() == HttpURLConnection.HTTP_OK)) {
-                Reader reader = new InputStreamReader(conn.getInputStream());
+                Reader reader = new InputStreamReader(conn.getInputStream(), "UTF-8");
                 JSONObject json = (JSONObject) JSONValue.parse(reader);
                 return new ObjectMapper().readValue(json.get(JsonTags.WORKFLOW_ACTION_RETRIES).toString(),
                         new TypeReference<List<Map<String, String>>>() {
@@ -1215,7 +1212,7 @@ public class OozieClient {
 
         protected String call(HttpURLConnection conn) throws IOException, OozieClientException {
             if ((conn.getResponseCode() == HttpURLConnection.HTTP_OK)) {
-                Reader reader = new InputStreamReader(conn.getInputStream());
+                Reader reader = new InputStreamReader(conn.getInputStream(), "UTF-8");
                 JSONObject json = (JSONObject) JSONValue.parse(reader);
                 return (String) json.get(JsonTags.JMS_TOPIC_NAME);
             }
@@ -1308,9 +1305,8 @@ public class OozieClient {
                                 printStream.println("Pending Dependencies : ");
 
                                 if (inputDependenciesList != null) {
-                                    Iterator<String> iterator = inputDependenciesList.iterator();
-                                    while (iterator.hasNext()) {
-                                        printStream.println("\t  " + iterator.next());
+                                    for (String anInputDependenciesList : (Iterable<String>) inputDependenciesList) {
+                                        printStream.println("\t  " + anInputDependenciesList);
                                     }
                                 }
                                 printStream.println();
@@ -1364,17 +1360,12 @@ public class OozieClient {
             String returnVal = null;
             if ((conn.getResponseCode() == HttpURLConnection.HTTP_OK)) {
                 InputStream is = conn.getInputStream();
-                InputStreamReader isr = new InputStreamReader(is);
-                try {
+                try (InputStreamReader isr = new InputStreamReader(is, "UTF-8")) {
                     if (printStream != null) {
                         sendToOutputStream(isr, -1, printStream);
-                    }
-                    else {
+                    } else {
                         returnVal = getReaderAsString(isr, -1);
                     }
-                }
-                finally {
-                    isr.close();
                 }
             }
             else {
@@ -1452,7 +1443,7 @@ public class OozieClient {
         @Override
         protected CoordinatorJob call(HttpURLConnection conn) throws IOException, OozieClientException {
             if ((conn.getResponseCode() == HttpURLConnection.HTTP_OK)) {
-                Reader reader = new InputStreamReader(conn.getInputStream());
+                Reader reader = new InputStreamReader(conn.getInputStream(), "UTF-8");
                 JSONObject json = (JSONObject) JSONValue.parse(reader);
                 return JsonToBean.createCoordinatorJob(json);
             }
@@ -1473,7 +1464,7 @@ public class OozieClient {
         @Override
         protected List<WorkflowJob> call(HttpURLConnection conn) throws IOException, OozieClientException {
             if ((conn.getResponseCode() == HttpURLConnection.HTTP_OK)) {
-                Reader reader = new InputStreamReader(conn.getInputStream());
+                Reader reader = new InputStreamReader(conn.getInputStream(), "UTF-8");
                 JSONObject json = (JSONObject) JSONValue.parse(reader);
                 JSONArray workflows = (JSONArray) json.get(JsonTags.WORKFLOWS_JOBS);
                 if (workflows == null) {
@@ -1499,7 +1490,7 @@ public class OozieClient {
         @Override
         protected BundleJob call(HttpURLConnection conn) throws IOException, OozieClientException {
             if ((conn.getResponseCode() == HttpURLConnection.HTTP_OK)) {
-                Reader reader = new InputStreamReader(conn.getInputStream());
+                Reader reader = new InputStreamReader(conn.getInputStream(), "UTF-8");
                 JSONObject json = (JSONObject) JSONValue.parse(reader);
                 return JsonToBean.createBundleJob(json);
             }
@@ -1519,7 +1510,7 @@ public class OozieClient {
         @Override
         protected CoordinatorAction call(HttpURLConnection conn) throws IOException, OozieClientException {
             if ((conn.getResponseCode() == HttpURLConnection.HTTP_OK)) {
-                Reader reader = new InputStreamReader(conn.getInputStream());
+                Reader reader = new InputStreamReader(conn.getInputStream(), "UTF-8");
                 JSONObject json = (JSONObject) JSONValue.parse(reader);
                 return JsonToBean.createCoordinatorAction(json);
             }
@@ -1610,7 +1601,7 @@ public class OozieClient {
         protected List<WorkflowJob> call(HttpURLConnection conn) throws IOException, OozieClientException {
             conn.setRequestProperty("content-type", RestConstants.XML_CONTENT_TYPE);
             if ((conn.getResponseCode() == HttpURLConnection.HTTP_OK)) {
-                Reader reader = new InputStreamReader(conn.getInputStream());
+                Reader reader = new InputStreamReader(conn.getInputStream(), "UTF-8");
                 JSONObject json = (JSONObject) JSONValue.parse(reader);
                 JSONArray workflows = (JSONArray) json.get(JsonTags.WORKFLOWS_JOBS);
                 if (workflows == null) {
@@ -1637,7 +1628,7 @@ public class OozieClient {
         protected List<CoordinatorJob> call(HttpURLConnection conn) throws IOException, OozieClientException {
             conn.setRequestProperty("content-type", RestConstants.XML_CONTENT_TYPE);
             if ((conn.getResponseCode() == HttpURLConnection.HTTP_OK)) {
-                Reader reader = new InputStreamReader(conn.getInputStream());
+                Reader reader = new InputStreamReader(conn.getInputStream(), "UTF-8");
                 JSONObject json = (JSONObject) JSONValue.parse(reader);
                 JSONArray jobs = (JSONArray) json.get(JsonTags.COORDINATOR_JOBS);
                 if (jobs == null) {
@@ -1664,7 +1655,7 @@ public class OozieClient {
         protected List<BundleJob> call(HttpURLConnection conn) throws IOException, OozieClientException {
             conn.setRequestProperty("content-type", RestConstants.XML_CONTENT_TYPE);
             if ((conn.getResponseCode() == HttpURLConnection.HTTP_OK)) {
-                Reader reader = new InputStreamReader(conn.getInputStream());
+                Reader reader = new InputStreamReader(conn.getInputStream(), "UTF-8");
                 JSONObject json = (JSONObject) JSONValue.parse(reader);
                 JSONArray jobs = (JSONArray) json.get(JsonTags.BUNDLE_JOBS);
                 if (jobs == null) {
@@ -1690,7 +1681,7 @@ public class OozieClient {
         protected List<BulkResponse> call(HttpURLConnection conn) throws IOException, OozieClientException {
             conn.setRequestProperty("content-type", RestConstants.XML_CONTENT_TYPE);
             if ((conn.getResponseCode() == HttpURLConnection.HTTP_OK)) {
-                Reader reader = new InputStreamReader(conn.getInputStream());
+                Reader reader = new InputStreamReader(conn.getInputStream(), "UTF-8");
                 JSONObject json = (JSONObject) JSONValue.parse(reader);
                 JSONArray results = (JSONArray) json.get(JsonTags.BULK_RESPONSES);
                 if (results == null) {
@@ -1717,7 +1708,7 @@ public class OozieClient {
         protected List<CoordinatorAction> call(HttpURLConnection conn) throws IOException, OozieClientException {
             conn.setRequestProperty("content-type", RestConstants.XML_CONTENT_TYPE);
             if ((conn.getResponseCode() == HttpURLConnection.HTTP_OK)) {
-                Reader reader = new InputStreamReader(conn.getInputStream());
+                Reader reader = new InputStreamReader(conn.getInputStream(), "UTF-8");
                 JSONObject json = (JSONObject) JSONValue.parse(reader);
                 JSONArray coordActions = (JSONArray) json.get(JsonTags.COORDINATOR_ACTIONS);
                 return JsonToBean.createCoordinatorActionList(coordActions);
@@ -1740,7 +1731,7 @@ public class OozieClient {
         protected List<CoordinatorAction> call(HttpURLConnection conn) throws IOException, OozieClientException {
             conn.setRequestProperty("content-type", RestConstants.XML_CONTENT_TYPE);
             if ((conn.getResponseCode() == HttpURLConnection.HTTP_OK)) {
-                Reader reader = new InputStreamReader(conn.getInputStream());
+                Reader reader = new InputStreamReader(conn.getInputStream(), "UTF-8");
                 JSONObject json = (JSONObject) JSONValue.parse(reader);
                 if(json != null) {
                     JSONArray coordActions = (JSONArray) json.get(JsonTags.COORDINATOR_ACTIONS);
@@ -1770,7 +1761,7 @@ public class OozieClient {
         protected List<CoordinatorAction> call(HttpURLConnection conn) throws IOException, OozieClientException {
             conn.setRequestProperty("content-type", RestConstants.XML_CONTENT_TYPE);
             if ((conn.getResponseCode() == HttpURLConnection.HTTP_OK)) {
-                Reader reader = new InputStreamReader(conn.getInputStream());
+                Reader reader = new InputStreamReader(conn.getInputStream(), "UTF-8");
                 JSONObject json = (JSONObject) JSONValue.parse(reader);
                 JSONArray coordActions = (JSONArray) json.get(JsonTags.COORDINATOR_ACTIONS);
                 return JsonToBean.createCoordinatorActionList(coordActions);
@@ -1982,9 +1973,7 @@ public class OozieClient {
      */
     protected String mapToString(Map<String, String> map) {
         StringBuilder sb = new StringBuilder();
-        Iterator<Entry<String, String>> it = map.entrySet().iterator();
-        while (it.hasNext()) {
-            Entry<String, String> e = (Entry<String, String>) it.next();
+        for (Entry<String, String> e : map.entrySet()) {
             sb.append(e.getKey()).append("=").append(e.getValue()).append(";");
         }
         return sb.toString();
@@ -2040,8 +2029,8 @@ public class OozieClient {
             protected Void call(HttpURLConnection conn) throws IOException, OozieClientException {
                 conn.setRequestProperty("content-type", RestConstants.XML_CONTENT_TYPE);
                 if ((conn.getResponseCode() == HttpURLConnection.HTTP_OK)) {
-                    BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream()));
-                    String line = null;
+                    BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream(), "UTF-8"));
+                    String line;
                     while ((line = br.readLine()) != null) {
                         System.out.println(line);
                     }
@@ -2063,7 +2052,7 @@ public class OozieClient {
         @Override
         protected String call(HttpURLConnection conn) throws IOException, OozieClientException {
             if ((conn.getResponseCode() == HttpURLConnection.HTTP_OK)) {
-                Reader reader = new InputStreamReader(conn.getInputStream());
+                Reader reader = new InputStreamReader(conn.getInputStream(), "UTF-8");
                 JSONObject json = (JSONObject) JSONValue.parse(reader);
                 return (String) json.get(JsonTags.JOB_ID);
             }
@@ -2123,7 +2112,7 @@ public class OozieClient {
         @Override
         protected SYSTEM_MODE call(HttpURLConnection conn) throws IOException, OozieClientException {
             if ((conn.getResponseCode() == HttpURLConnection.HTTP_OK)) {
-                Reader reader = new InputStreamReader(conn.getInputStream());
+                Reader reader = new InputStreamReader(conn.getInputStream(), "UTF-8");
                 JSONObject json = (JSONObject) JSONValue.parse(reader);
                 return SYSTEM_MODE.valueOf((String) json.get(JsonTags.OOZIE_SYSTEM_MODE));
             }
@@ -2165,7 +2154,7 @@ public class OozieClient {
         @Override
         protected String call(HttpURLConnection conn) throws IOException, OozieClientException {
             if ((conn.getResponseCode() == HttpURLConnection.HTTP_OK)) {
-                Reader reader = new InputStreamReader(conn.getInputStream());
+                Reader reader = new InputStreamReader(conn.getInputStream(), "UTF-8");
                 JSONObject json = (JSONObject) JSONValue.parse(reader);
                 return (String) json.get(JsonTags.BUILD_VERSION);
             }
@@ -2192,13 +2181,13 @@ public class OozieClient {
             if (file.startsWith("/")) {
                 FileInputStream fi = new FileInputStream(new File(file));
                 byte[] buffer = new byte[1024];
-                int n = 0;
+                int n;
                 while (-1 != (n = fi.read(buffer))) {
                     conn.getOutputStream().write(buffer, 0, n);
                 }
             }
             if ((conn.getResponseCode() == HttpURLConnection.HTTP_OK)) {
-                Reader reader = new InputStreamReader(conn.getInputStream());
+                Reader reader = new InputStreamReader(conn.getInputStream(), "UTF-8");
                 JSONObject json = (JSONObject) JSONValue.parse(reader);
                 return (String) json.get(JsonTags.VALIDATE);
             }
@@ -2224,8 +2213,8 @@ public class OozieClient {
         protected String call(HttpURLConnection conn) throws IOException, OozieClientException {
             StringBuffer bf = new StringBuffer();
             if ((conn.getResponseCode() == HttpURLConnection.HTTP_OK)) {
-                Reader reader = new InputStreamReader(conn.getInputStream());
-                Object sharelib = (Object) JSONValue.parse(reader);
+                Reader reader = new InputStreamReader(conn.getInputStream(), "UTF-8");
+                Object sharelib = JSONValue.parse(reader);
                 bf.append("[ShareLib update status]").append(System.getProperty("line.separator"));
                 if (sharelib instanceof JSONArray) {
                     for (Object o : ((JSONArray) sharelib)) {
@@ -2266,7 +2255,7 @@ public class OozieClient {
 
             if ((conn.getResponseCode() == HttpURLConnection.HTTP_OK)) {
                 StringBuffer bf = new StringBuffer();
-                Reader reader = new InputStreamReader(conn.getInputStream());
+                Reader reader = new InputStreamReader(conn.getInputStream(), "UTF-8");
                 JSONObject json = (JSONObject) JSONValue.parse(reader);
                 Object sharelib = json.get(JsonTags.SHARELIB_LIB);
                 bf.append("[Available ShareLib]").append(System.getProperty("line.separator"));
@@ -2506,7 +2495,7 @@ public class OozieClient {
         @Override
         protected String call(HttpURLConnection conn) throws IOException, OozieClientException {
             if ((conn.getResponseCode() == HttpURLConnection.HTTP_OK)) {
-                Reader reader = new InputStreamReader(conn.getInputStream());
+                Reader reader = new InputStreamReader(conn.getInputStream(), "UTF-8");
                 JSONObject json = (JSONObject) JSONValue.parse(reader);
                 return (String) json.get(JsonTags.STATUS);
             }
@@ -2529,7 +2518,7 @@ public class OozieClient {
                 return null;
             }
 
-            Reader reader = new InputStreamReader(conn.getInputStream());
+            Reader reader = new InputStreamReader(conn.getInputStream(), "UTF-8");
             JSONObject json = (JSONObject) JSONValue.parse(reader);
             List<String> queueDumpMessages = Lists.newArrayList();
 
@@ -2671,10 +2660,9 @@ public class OozieClient {
         @Override
         protected Metrics call(HttpURLConnection conn) throws IOException, OozieClientException {
             if ((conn.getResponseCode() == HttpURLConnection.HTTP_OK)) {
-                Reader reader = new InputStreamReader(conn.getInputStream());
+                Reader reader = new InputStreamReader(conn.getInputStream(), "UTF-8");
                 JSONObject json = (JSONObject) JSONValue.parse(reader);
-                Metrics metrics = new Metrics(json);
-                return metrics;
+                return new Metrics(json);
             }
             else if ((conn.getResponseCode() == HttpURLConnection.HTTP_UNAVAILABLE)) {
                 // Use Instrumentation endpoint
@@ -2696,28 +2684,28 @@ public class OozieClient {
         @SuppressWarnings("unchecked")
         public Metrics(JSONObject json) {
             JSONObject jCounters = (JSONObject) json.get("counters");
-            counters = new HashMap<String, Long>(jCounters.size());
+            counters = new HashMap<>(jCounters.size());
             for (Object entO : jCounters.entrySet()) {
                 Entry<String, JSONObject> ent = (Entry<String, JSONObject>) entO;
                 counters.put(ent.getKey(), (Long)ent.getValue().get("count"));
             }
 
             JSONObject jGuages = (JSONObject) json.get("gauges");
-            gauges = new HashMap<String, Object>(jGuages.size());
+            gauges = new HashMap<>(jGuages.size());
             for (Object entO : jGuages.entrySet()) {
                 Entry<String, JSONObject> ent = (Entry<String, JSONObject>) entO;
                 gauges.put(ent.getKey(), ent.getValue().get("value"));
             }
 
             JSONObject jTimers = (JSONObject) json.get("timers");
-            timers = new HashMap<String, Timer>(jTimers.size());
+            timers = new HashMap<>(jTimers.size());
             for (Object entO : jTimers.entrySet()) {
                 Entry<String, JSONObject> ent = (Entry<String, JSONObject>) entO;
                 timers.put(ent.getKey(), new Timer(ent.getValue()));
             }
 
             JSONObject jHistograms = (JSONObject) json.get("histograms");
-            histograms = new HashMap<String, Histogram>(jHistograms.size());
+            histograms = new HashMap<>(jHistograms.size());
             for (Object entO : jHistograms.entrySet()) {
                 Entry<String, JSONObject> ent = (Entry<String, JSONObject>) entO;
                 histograms.put(ent.getKey(), new Histogram(ent.getValue()));
@@ -2904,10 +2892,9 @@ public class OozieClient {
         @Override
         protected Instrumentation call(HttpURLConnection conn) throws IOException, OozieClientException {
             if ((conn.getResponseCode() == HttpURLConnection.HTTP_OK)) {
-                Reader reader = new InputStreamReader(conn.getInputStream());
+                Reader reader = new InputStreamReader(conn.getInputStream(), "UTF-8");
                 JSONObject json = (JSONObject) JSONValue.parse(reader);
-                Instrumentation instrumentation = new Instrumentation(json);
-                return instrumentation;
+                return new Instrumentation(json);
             }
             else if ((conn.getResponseCode() == HttpURLConnection.HTTP_UNAVAILABLE)) {
                 // Use Metrics endpoint
@@ -2928,7 +2915,7 @@ public class OozieClient {
 
         public Instrumentation(JSONObject json) {
             JSONArray jCounters = (JSONArray) json.get("counters");
-            counters = new HashMap<String, Long>(jCounters.size());
+            counters = new HashMap<>(jCounters.size());
             for (Object groupO : jCounters) {
                 JSONObject group = (JSONObject) groupO;
                 String groupName = group.get("group").toString() + ".";
@@ -2940,7 +2927,7 @@ public class OozieClient {
             }
 
             JSONArray jVariables = (JSONArray) json.get("variables");
-            variables = new HashMap<String, Object>(jVariables.size());
+            variables = new HashMap<>(jVariables.size());
             for (Object groupO : jVariables) {
                 JSONObject group = (JSONObject) groupO;
                 String groupName = group.get("group").toString() + ".";
@@ -2952,7 +2939,7 @@ public class OozieClient {
             }
 
             JSONArray jSamplers = (JSONArray) json.get("samplers");
-            samplers = new HashMap<String, Double>(jSamplers.size());
+            samplers = new HashMap<>(jSamplers.size());
             for (Object groupO : jSamplers) {
                 JSONObject group = (JSONObject) groupO;
                 String groupName = group.get("group").toString() + ".";
@@ -2964,7 +2951,7 @@ public class OozieClient {
             }
 
             JSONArray jTimers = (JSONArray) json.get("timers");
-            timers = new HashMap<String, Timer>(jTimers.size());
+            timers = new HashMap<>(jTimers.size());
             for (Object groupO : jTimers) {
                 JSONObject group = (JSONObject) groupO;
                 String groupName = group.get("group").toString() + ".";
@@ -3109,5 +3096,4 @@ public class OozieClient {
         }
         return obj;
     }
-
 }

@@ -24,8 +24,10 @@ import org.apache.commons.cli.GnuParser;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.HelpFormatter;
-import org.apache.commons.cli.UnrecognizedOptionException;
 
+import java.io.OutputStreamWriter;
+import java.io.UnsupportedEncodingException;
+import java.io.Writer;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.LinkedHashMap;
@@ -42,9 +44,9 @@ public class CLIParser {
 
     private String cliName;
     private String[] cliHelp;
-    private Map<String, Options> commands = new LinkedHashMap<String, Options>();
-    private Map<String, Boolean> commandWithArgs = new LinkedHashMap<String, Boolean>();
-    private Map<String, String> commandsHelp = new LinkedHashMap<String, String>();
+    private Map<String, Options> commands = new LinkedHashMap<>();
+    private Map<String, Boolean> commandWithArgs = new LinkedHashMap<>();
+    private Map<String, String> commandsHelp = new LinkedHashMap<>();
 
     /**
      * Create a parser.
@@ -165,8 +167,9 @@ public class CLIParser {
      * 
      * @param commandLine the command line
      */
-    public void showHelp(CommandLine commandLine) {
-        PrintWriter pw = new PrintWriter(System.out);
+    public void showHelp(CommandLine commandLine) throws UnsupportedEncodingException {
+        Writer writer = new OutputStreamWriter(System.out, "UTF-8");
+        PrintWriter pw = new PrintWriter(writer);
         pw.println("usage: ");
         for (String s : cliHelp) {
             pw.println(LEFT_PADDING + s);
@@ -176,7 +179,7 @@ public class CLIParser {
         Set<String> commandsToPrint = commands.keySet();
         String[] args = commandLine.getArgs();
         if (args.length > 0 && commandsToPrint.contains(args[0])) {
-            commandsToPrint = new HashSet<String>();
+            commandsToPrint = new HashSet<>();
             commandsToPrint.add(args[0]);
         }
         for (String comm : commandsToPrint) {
@@ -203,15 +206,9 @@ public class CLIParser {
 
         @Override
         protected void checkRequiredOptions() throws MissingOptionException {
-            if (ignoreMissingOption) {
-                return;
-            }
-            else {
+            if (!ignoreMissingOption) {
                 super.checkRequiredOptions();
             }
         }
     }
-
 }
-
-
