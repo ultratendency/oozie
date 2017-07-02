@@ -20,9 +20,10 @@ package org.apache.oozie.action.ssh;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileWriter;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -112,7 +113,7 @@ public class SshActionExecutor extends ActionExecutor {
     @Override
     public void check(Context context, WorkflowAction action) throws ActionExecutorException {
         Status status = getActionStatus(context, action);
-        boolean captureOutput = false;
+        boolean captureOutput;
         try {
             Element eConf = XmlUtils.parseXml(action.getConf());
             Namespace ns = eConf.getNamespace();
@@ -207,7 +208,6 @@ public class SshActionExecutor extends ActionExecutor {
             public String call() throws Exception {
                 return setupRemote(host, context, action);
             }
-
         });
 
         String runningPid = execute(new Callable<String>() {
@@ -263,7 +263,6 @@ public class SshActionExecutor extends ActionExecutor {
                         return doExecute(host, dirLocation, commandElement.getValue(), argsF, ignoreOutput, action, recoveryId,
                                 preserveF);
                     }
-
                 });
             }
             context.setStartData(pid, host, host);
@@ -277,14 +276,13 @@ public class SshActionExecutor extends ActionExecutor {
     }
 
     private String checkIfRunning(String host, final Context context, final WorkflowAction action) {
-        String pid = null;
         String outFile = getRemoteFileName(context, action, "pid", false, false);
         String getOutputCmd = SSH_COMMAND_BASE + host + " cat " + outFile;
         try {
             Process process = Runtime.getRuntime().exec(getOutputCmd.split("\\s"));
             StringBuffer buffer = new StringBuffer();
             drainBuffers(process, buffer, null, maxLen);
-            pid = getFirstLine(buffer);
+            String pid = getFirstLine(buffer);
 
             if (Long.valueOf(pid) > 0) {
                 return pid;
@@ -336,9 +334,8 @@ public class SshActionExecutor extends ActionExecutor {
         StringBuffer errorBuffer = new StringBuffer();
         int exitValue = drainBuffers(p, null, errorBuffer, maxLen);
 
-        String error = null;
         if (exitValue != 0) {
-            error = getTruncatedString(errorBuffer);
+            String error = getTruncatedString(errorBuffer);
             throw new IOException(XLog.format("Not able to perform operation [{0}]", command) + " | " + "ErrorStream: "
                     + error);
         }
@@ -422,17 +419,15 @@ public class SshActionExecutor extends ActionExecutor {
         }
         log.trace("Executing ssh command [{0}]", Arrays.toString(finalCommand));
         Process p = runtime.exec(finalCommand);
-        String pid = "";
 
         StringBuffer inputBuffer = new StringBuffer();
         StringBuffer errorBuffer = new StringBuffer();
         int exitValue = drainBuffers(p, inputBuffer, errorBuffer, maxLen);
 
-        pid = getFirstLine(inputBuffer);
+        String pid = getFirstLine(inputBuffer);
 
-        String error = null;
         if (exitValue != 0) {
-            error = getTruncatedString(errorBuffer);
+            String error = getTruncatedString(errorBuffer);
             throw new IOException(XLog.format("Not able to execute ssh-base.sh on {0}", host) + " | " + "ErrorStream: "
                     + error);
         }
@@ -499,10 +494,10 @@ public class SshActionExecutor extends ActionExecutor {
             throw new RuntimeException(XLog.format("Not able to create required directory {0}", dirLocation));
         }
         try {
-            IOUtils.copyCharStream(IOUtils.getResourceAsReader("ssh-base.sh", -1), new FileWriter(dirLocation
-                    + "/ssh-base.sh"));
-            IOUtils.copyCharStream(IOUtils.getResourceAsReader("ssh-wrapper.sh", -1), new FileWriter(dirLocation
-                    + "/ssh-wrapper.sh"));
+            IOUtils.copyCharStream(IOUtils.getResourceAsReader("ssh-base.sh", -1), new OutputStreamWriter(
+                    new FileOutputStream(dirLocation + "/ssh-base.sh"), "UTF-8"));
+            IOUtils.copyCharStream(IOUtils.getResourceAsReader("ssh-wrapper.sh", -1), new OutputStreamWriter(
+                    new FileOutputStream(dirLocation + "/ssh-wrapper.sh"), "UTF-8"));
         }
         catch (IOException ie) {
             throw new RuntimeException(XLog.format("Not able to copy required scripts file to {0} "
@@ -657,7 +652,6 @@ public class SshActionExecutor extends ActionExecutor {
      * @return truncated string string
      */
     private String getTruncatedString(StringBuffer strBuffer) {
-
         if (strBuffer.length() <= maxLen) {
             return strBuffer.toString();
         }
@@ -681,31 +675,25 @@ public class SshActionExecutor extends ActionExecutor {
     private int drainBuffers(Process p, StringBuffer inputBuffer, StringBuffer errorBuffer, int maxLength)
             throws IOException {
         int exitValue = -1;
-        BufferedReader ir = new BufferedReader(new InputStreamReader(p.getInputStream()));
-        BufferedReader er = new BufferedReader(new InputStreamReader(p.getErrorStream()));
 
         int inBytesRead = 0;
         int errBytesRead = 0;
 
         boolean processEnded = false;
 
-        try {
+        try (BufferedReader ir = new BufferedReader(new InputStreamReader(p.getInputStream(), "UTF-8"));
+             BufferedReader er = new BufferedReader(new InputStreamReader(p.getErrorStream(), "UTF-8"))) {
             while (!processEnded) {
                 try {
                     exitValue = p.exitValue();
                     processEnded = true;
-                }
-                catch (IllegalThreadStateException ex) {
+                } catch (IllegalThreadStateException ex) {
                     // Continue to drain.
                 }
 
                 inBytesRead += drainBuffer(ir, inputBuffer, maxLength, inBytesRead, processEnded);
                 errBytesRead += drainBuffer(er, errorBuffer, maxLength, errBytesRead, processEnded);
             }
-        }
-        finally {
-            ir.close();
-            er.close();
         }
         return exitValue;
     }
@@ -746,8 +734,7 @@ public class SshActionExecutor extends ActionExecutor {
      * @return The first line of the buffer.
      */
     private String getFirstLine(StringBuffer buffer) {
-        int newLineIndex = 0;
-        newLineIndex = buffer.indexOf("\n");
+        int newLineIndex = buffer.indexOf("\n");
         if (newLineIndex == -1) {
             return buffer.toString();
         }

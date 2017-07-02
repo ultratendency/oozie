@@ -16,7 +16,6 @@
  * limitations under the License.
  */
 
-
 package org.apache.oozie.util;
 
 import java.io.BufferedReader;
@@ -64,13 +63,7 @@ public class AuthUrlClient {
         try {
             conn = new AuthenticatedURL(AuthenticatorClass.newInstance()).openConnection(url, token);
         }
-        catch (AuthenticationException ex) {
-            throw new IOException("Could not authenticate, " + ex.getMessage(), ex);
-        }
-        catch (InstantiationException ex) {
-            throw new IOException("Could not authenticate, " + ex.getMessage(), ex);
-        }
-        catch (IllegalAccessException ex) {
+        catch (AuthenticationException | InstantiationException | IllegalAccessException ex) {
             throw new IOException("Could not authenticate, " + ex.getMessage(), ex);
         }
         if (conn.getResponseCode() != HttpURLConnection.HTTP_OK) {
@@ -94,14 +87,16 @@ public class AuthUrlClient {
             throw new IOException("Authentication type must be specified: simple|kerberos|<class>");
         }
         authName = authName.trim();
-        if (authName.equals("simple")) {
-            authClassName = PseudoAuthenticator.class.getName();
-        }
-        else if (authName.equals("kerberos")) {
-            authClassName = KerberosAuthenticator.class.getName();
-        }
-        else {
-            authClassName = authName;
+        switch (authName) {
+            case "simple":
+                authClassName = PseudoAuthenticator.class.getName();
+                break;
+            case "kerberos":
+                authClassName = KerberosAuthenticator.class.getName();
+                break;
+            default:
+                authClassName = authName;
+                break;
         }
 
         authClass = (Class<? extends Authenticator>) Thread.currentThread().getContextClassLoader()
@@ -123,7 +118,7 @@ public class AuthUrlClient {
         }
 
         final URL url = new URL(server);
-        BufferedReader reader = null;
+        BufferedReader reader;
         try {
             reader = UserGroupInformation.getLoginUser().doAs(new PrivilegedExceptionAction<BufferedReader>() {
                 @Override
@@ -133,7 +128,7 @@ public class AuthUrlClient {
                     BufferedReader reader = null;
                     if ((conn.getResponseCode() == HttpURLConnection.HTTP_OK)) {
                         InputStream is = conn.getInputStream();
-                        reader = new BufferedReader(new InputStreamReader(is));
+                        reader = new BufferedReader(new InputStreamReader(is, "UTF-8"));
                     }
                     return reader;
                 }
@@ -161,5 +156,4 @@ public class AuthUrlClient {
         }
         return stringBuilder.toString();
     }
-
 }

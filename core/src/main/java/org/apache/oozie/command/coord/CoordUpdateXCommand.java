@@ -16,7 +16,6 @@
  * limitations under the License.
  */
 
-
 package org.apache.oozie.command.coord;
 
 import java.io.ByteArrayOutputStream;
@@ -65,14 +64,14 @@ public class CoordUpdateXCommand extends CoordSubmitXCommand {
     public CoordUpdateXCommand(boolean dryrun, Configuration conf, String jobId) {
         super(dryrun, conf);
         this.jobId = jobId;
-        isConfChange = conf.size() == 0 ? false : true;
+        isConfChange = conf.size() != 0;
     }
 
     public CoordUpdateXCommand(boolean dryrun, Configuration conf, String jobId, boolean showDiff) {
         super(dryrun, conf);
         this.jobId = jobId;
         this.showDiff = showDiff;
-        isConfChange = conf.size() == 0 ? false : true;
+        isConfChange = conf.size() != 0;
     }
 
     @Override
@@ -89,7 +88,6 @@ public class CoordUpdateXCommand extends CoordSubmitXCommand {
         oldCoordJob.setExecution(coordJob.getExecution());
         oldCoordJob.setTimeout(coordJob.getTimeout());
         oldCoordJob.setJobXml(XmlUtils.prettyPrint(eJob).toString());
-
 
         if (!dryrun) {
             oldCoordJob.setLastModifiedTime(new Date());
@@ -146,7 +144,6 @@ public class CoordUpdateXCommand extends CoordSubmitXCommand {
         coordJob.setConf(XmlUtils.prettyPrint(conf).toString());
         setJob(coordJob);
         LogUtils.setLogInfo(coordJob);
-
     }
 
     @Override
@@ -164,7 +161,6 @@ public class CoordUpdateXCommand extends CoordSubmitXCommand {
      * @param eJob the e job
      * @return the diff
      */
-
     private void computeDiff(Element eJob) {
         try {
             diff.append("**********Job definition changes**********").append(System.getProperty("line.separator"));
@@ -195,12 +191,12 @@ public class CoordUpdateXCommand extends CoordSubmitXCommand {
      */
     private String getDiffinGitFormat(String string1, String string2) throws IOException {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
-        RawText rt1 = new RawText(string1.getBytes());
-        RawText rt2 = new RawText(string2.getBytes());
+        RawText rt1 = new RawText(string1.getBytes("UTF-8"));
+        RawText rt2 = new RawText(string2.getBytes("UTF-8"));
         EditList diffList = new EditList();
         diffList.addAll(new HistogramDiff().diff(RawTextComparator.DEFAULT, rt1, rt2));
         new DiffFormatter(out).format(diffList, rt1, rt2);
-        return out.toString();
+        return out.toString("UTF-8");
     }
 
     @Override

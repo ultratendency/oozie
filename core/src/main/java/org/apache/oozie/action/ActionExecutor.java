@@ -34,6 +34,7 @@ import org.apache.oozie.service.Services;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.io.UnsupportedEncodingException;
 import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.Map;
@@ -58,13 +59,12 @@ public abstract class ActionExecutor {
 
     public static final String OOZIE_ACTION_YARN_TAG = "oozie.action.yarn.tag";
 
-
     /**
      * Error code used by {@link #convertException} when there is not register error information for an exception.
      */
     public static final String ERROR_OTHER = "OTHER";
 
-    public static enum RETRYPOLICY {
+    public enum RETRYPOLICY {
         EXPONENTIAL, PERIODIC
     }
 
@@ -81,7 +81,7 @@ public abstract class ActionExecutor {
     }
 
     private static boolean initMode = false;
-    private static Map<String, Map<String, ErrorInfo>> ERROR_INFOS = new HashMap<String, Map<String, ErrorInfo>>();
+    private static Map<String, Map<String, ErrorInfo>> ERROR_INFOS = new HashMap<>();
 
     /**
      * Context information passed to the ActionExecutor methods.
@@ -350,8 +350,13 @@ public abstract class ActionExecutor {
         }
         catch (java.lang.NoClassDefFoundError err) {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            err.printStackTrace(new PrintStream(baos));
-            XLog.getLog(getClass()).warn(baos.toString());
+
+            try {
+                err.printStackTrace(new PrintStream(baos, false, "UTF-8"));
+                XLog.getLog(getClass()).warn(baos.toString("UTF-8"));
+            } catch (UnsupportedEncodingException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 

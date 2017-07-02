@@ -71,7 +71,6 @@ public class XmlUtils {
         public InputSource resolveEntity(String publicId, String systemId) throws SAXException, IOException {
             return new InputSource(new ByteArrayInputStream(new byte[0]));
         }
-
     }
 
     private static SAXBuilder createSAXBuilder() {
@@ -175,10 +174,7 @@ public class XmlUtils {
             Document doc = saxBuilder.build(Thread.currentThread().getContextClassLoader().getResourceAsStream(filePath));
             return doc.getRootElement().getAttributeValue(attributeName);
         }
-        catch (JDOMException e) {
-            throw new RuntimeException();
-        }
-        catch (IOException e) {
+        catch (JDOMException | IOException e) {
             throw new RuntimeException();
         }
     }
@@ -232,7 +228,6 @@ public class XmlUtils {
      */
     public static PrettyPrint prettyPrint(Element element) {
         return new PrettyPrint(element);
-
     }
 
     /**
@@ -281,7 +276,7 @@ public class XmlUtils {
     public static void validateXml(Schema schema, String xml) throws SAXException, IOException {
 
         Validator validator = schema.newValidator();
-        validator.validate(new StreamSource(new ByteArrayInputStream(xml.getBytes())));
+        validator.validate(new StreamSource(new ByteArrayInputStream(xml.getBytes("UTF-8"))));
     }
 
     /**
@@ -406,9 +401,7 @@ public class XmlUtils {
     public static Element getSLAElement(Element elem) {
         Element eSla_1 = elem.getChild("info", Namespace.getNamespace(SchemaService.SLA_NAME_SPACE_URI));
         Element eSla_2 = elem.getChild("info", Namespace.getNamespace(SchemaService.SLA_NAMESPACE_URI_2));
-        Element eSla = (eSla_2 != null) ? eSla_2 : eSla_1;
 
-        return eSla;
+        return (eSla_2 != null) ? eSla_2 : eSla_1;
     }
-
 }

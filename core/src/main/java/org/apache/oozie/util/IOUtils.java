@@ -116,7 +116,7 @@ public abstract class IOUtils {
      * @throws IOException thrown if the resource could not be read.
      */
     public static Reader getResourceAsReader(String path, int maxLen) throws IOException {
-        return new InputStreamReader(getResourceAsStream(path, maxLen));
+        return new InputStreamReader(getResourceAsStream(path, maxLen), "UTF-8");
     }
 
     /**
@@ -133,7 +133,7 @@ public abstract class IOUtils {
         if (is == null) {
             throw new IllegalArgumentException(XLog.format("resource [{0}] not found", path));
         }
-        Reader reader = new InputStreamReader(is);
+        Reader reader = new InputStreamReader(is, "UTF-8");
         return getReaderAsString(reader, maxLen);
     }
 

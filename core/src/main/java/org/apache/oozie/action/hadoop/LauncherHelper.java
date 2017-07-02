@@ -22,6 +22,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -34,6 +35,7 @@ import java.util.Map;
 import java.util.Properties;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.SequenceFile;
@@ -66,12 +68,11 @@ public class LauncherHelper {
 
         if (fs.exists(recoveryFile)) {
             InputStream is = fs.open(recoveryFile);
-            BufferedReader reader = new BufferedReader(new InputStreamReader(is));
+            BufferedReader reader = new BufferedReader(new InputStreamReader(is, "UTF-8"));
             jobId = reader.readLine();
             reader.close();
         }
         return jobId;
-
     }
 
     public static void setupMainClass(Configuration launcherConf, String javaMainClass) {
@@ -132,7 +133,7 @@ public class LauncherHelper {
         actionConf.set(LauncherMapper.OOZIE_ACTION_ID, actionId);
 
         if (Services.get().getConf().getBoolean("oozie.hadoop-2.0.2-alpha.workaround.for.distributed.cache", false)) {
-          List<String> purgedEntries = new ArrayList<String>();
+          List<String> purgedEntries = new ArrayList<>();
           Collection<String> entries = actionConf.getStringCollection("mapreduce.job.cache.files");
           for (String entry : entries) {
             if (entry.contains("#")) {
@@ -157,9 +158,14 @@ public class LauncherHelper {
 
     public static String getTag(String launcherTag) throws NoSuchAlgorithmException {
         MessageDigest digest = MessageDigest.getInstance("MD5");
-        digest.update(launcherTag.getBytes(), 0, launcherTag.length());
-        String md5 = "oozie-" + new BigInteger(1, digest.digest()).toString(16);
-        return md5;
+
+        try {
+            digest.update(launcherTag.getBytes("UTF-8"), 0, launcherTag.length());
+        } catch (UnsupportedEncodingException e) {
+            throw new RuntimeException(e);
+        }
+
+        return "oozie-" + new BigInteger(1, digest.digest()).toString(16);
     }
 
     public static boolean isMainDone(RunningJob runningJob) throws IOException {
@@ -248,7 +254,7 @@ public class LauncherHelper {
         return ugi.doAs(new PrivilegedExceptionAction<Map<String, String>>() {
             @Override
             public Map<String, String> run() throws IOException {
-                Map<String, String> ret = new HashMap<String, String>();
+                Map<String, String> ret = new HashMap<>();
                 Path seqFilePath = getActionDataSequenceFilePath(actionDir);
                 if (fs.exists(seqFilePath)) {
                     SequenceFile.Reader seqFile = new SequenceFile.Reader(fs, seqFilePath, conf);
@@ -261,42 +267,38 @@ public class LauncherHelper {
                 else { // maintain backward-compatibility. to be deprecated
                     org.apache.hadoop.fs.FileStatus[] files = fs.listStatus(actionDir);
                     InputStream is;
-                    BufferedReader reader = null;
+                    BufferedReader reader;
                     Properties props;
                     if (files != null && files.length > 0) {
-                        for (int x = 0; x < files.length; x++) {
-                            Path file = files[x].getPath();
-                            if (file.equals(new Path(actionDir, "externalChildIds.properties"))) {
-                                is = fs.open(file);
-                                reader = new BufferedReader(new InputStreamReader(is));
+                        for (FileStatus fileStatus : files) {
+                            Path path = fileStatus.getPath();
+                            if (path.equals(new Path(actionDir, "externalChildIds.properties"))) {
+                                is = fs.open(path);
+                                reader = new BufferedReader(new InputStreamReader(is, "UTF-8"));
                                 ret.put(LauncherMapper.ACTION_DATA_EXTERNAL_CHILD_IDS,
                                         IOUtils.getReaderAsString(reader, -1));
-                            }
-                            else if (file.equals(new Path(actionDir, "newId.properties"))) {
-                                is = fs.open(file);
-                                reader = new BufferedReader(new InputStreamReader(is));
+                            } else if (path.equals(new Path(actionDir, "newId.properties"))) {
+                                is = fs.open(path);
+                                reader = new BufferedReader(new InputStreamReader(is, "UTF-8"));
                                 props = PropertiesUtils.readProperties(reader, -1);
                                 ret.put(LauncherMapper.ACTION_DATA_NEW_ID, props.getProperty("id"));
-                            }
-                            else if (file.equals(new Path(actionDir, LauncherMapper.ACTION_DATA_OUTPUT_PROPS))) {
+                            } else if (path.equals(new Path(actionDir, LauncherMapper.ACTION_DATA_OUTPUT_PROPS))) {
                                 int maxOutputData = conf.getInt(LauncherMapper.CONF_OOZIE_ACTION_MAX_OUTPUT_DATA,
                                         2 * 1024);
-                                is = fs.open(file);
-                                reader = new BufferedReader(new InputStreamReader(is));
+                                is = fs.open(path);
+                                reader = new BufferedReader(new InputStreamReader(is, "UTF-8"));
                                 ret.put(LauncherMapper.ACTION_DATA_OUTPUT_PROPS, PropertiesUtils
                                         .propertiesToString(PropertiesUtils.readProperties(reader, maxOutputData)));
-                            }
-                            else if (file.equals(new Path(actionDir, LauncherMapper.ACTION_DATA_STATS))) {
+                            } else if (path.equals(new Path(actionDir, LauncherMapper.ACTION_DATA_STATS))) {
                                 int statsMaxOutputData = conf.getInt(LauncherMapper.CONF_OOZIE_EXTERNAL_STATS_MAX_SIZE,
                                         Integer.MAX_VALUE);
-                                is = fs.open(file);
-                                reader = new BufferedReader(new InputStreamReader(is));
+                                is = fs.open(path);
+                                reader = new BufferedReader(new InputStreamReader(is, "UTF-8"));
                                 ret.put(LauncherMapper.ACTION_DATA_STATS, PropertiesUtils
                                         .propertiesToString(PropertiesUtils.readProperties(reader, statsMaxOutputData)));
-                            }
-                            else if (file.equals(new Path(actionDir, LauncherMapper.ACTION_DATA_ERROR_PROPS))) {
-                                is = fs.open(file);
-                                reader = new BufferedReader(new InputStreamReader(is));
+                            } else if (path.equals(new Path(actionDir, LauncherMapper.ACTION_DATA_ERROR_PROPS))) {
+                                is = fs.open(path);
+                                reader = new BufferedReader(new InputStreamReader(is, "UTF-8"));
                                 ret.put(LauncherMapper.ACTION_DATA_ERROR_PROPS, IOUtils.getReaderAsString(reader, -1));
                             }
                         }
@@ -318,5 +320,4 @@ public class LauncherHelper {
         }
         return tag;
     }
-
 }

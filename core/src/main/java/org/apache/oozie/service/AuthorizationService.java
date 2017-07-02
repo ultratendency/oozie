@@ -24,11 +24,11 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.ArrayList;
 import java.util.Set;
 
 import org.apache.hadoop.conf.Configuration;
@@ -119,14 +119,14 @@ public class AuthorizationService implements Service {
             String[] str = getTrimmedStrings(Services.get().getConf().get(CONF_ADMIN_GROUPS));
             if (str.length > 0) {
                 log.info("Admin users will be checked against the defined admin groups");
-                adminGroups = new HashSet<String>();
+                adminGroups = new HashSet<>();
                 for (String s : str) {
                     adminGroups.add(s.trim());
                 }
             }
             else {
                 log.info("Admin users will be checked against the 'adminusers.txt' file contents");
-                adminUsers = new HashSet<String>();
+                adminUsers = new HashSet<>();
                 loadAdminUsers();
             }
         }
@@ -170,7 +170,7 @@ public class AuthorizationService implements Service {
             File file = new File(configDir, ADMIN_USERS_FILE);
             if (file.exists()) {
                 try {
-                    BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(file)));
+                    BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(file), "UTF-8"));
                     try {
                         String line = br.readLine();
                         while (line != null) {
@@ -185,7 +185,7 @@ public class AuthorizationService implements Service {
                         throw new ServiceException(ErrorCode.E0160, file.getAbsolutePath(), ex);
                     }
                 }
-                catch (FileNotFoundException ex) {
+                catch (FileNotFoundException | UnsupportedEncodingException ex) {
                     throw new ServiceException(ErrorCode.E0160, file.getAbsolutePath(), ex);
                 }
             }
@@ -434,7 +434,7 @@ public class AuthorizationService implements Service {
             try {
                 // handle workflow jobs
                 if (jobId.endsWith("-W")) {
-                    WorkflowJobBean jobBean = null;
+                    WorkflowJobBean jobBean;
                     JPAService jpaService = Services.get().get(JPAService.class);
                     if (jpaService != null) {
                         try {
@@ -478,7 +478,7 @@ public class AuthorizationService implements Service {
                 }
                 // handle coordinator jobs
                 else {
-                    CoordinatorJobBean jobBean = null;
+                    CoordinatorJobBean jobBean;
                     JPAService jpaService = Services.get().get(JPAService.class);
                     if (jpaService != null) {
                         try {
@@ -521,78 +521,77 @@ public class AuthorizationService implements Service {
         if (authorizationEnabled && write && !isAdmin(user)) {
             try {
                 // handle workflow jobs
-                if (jobType.equals("wf")) {
-                    List<WorkflowJobBean> jobBeans = new ArrayList<WorkflowJobBean>();
-                    JPAService jpaService = Services.get().get(JPAService.class);
-                    if (jpaService != null) {
-                        try {
-                            jobBeans = jpaService.execute(new WorkflowsJobGetJPAExecutor(
-                                    filter, start, len)).getWorkflows();
+                switch (jobType) {
+                    case "wf": {
+                        List<WorkflowJobBean> jobBeans;
+                        JPAService jpaService = Services.get().get(JPAService.class);
+                        if (jpaService != null) {
+                            try {
+                                jobBeans = jpaService.execute(new WorkflowsJobGetJPAExecutor(
+                                        filter, start, len)).getWorkflows();
+                            } catch (JPAExecutorException je) {
+                                throw new AuthorizationException(je);
+                            }
+                        } else {
+                            throw new AuthorizationException(ErrorCode.E0610);
                         }
-                        catch (JPAExecutorException je) {
-                            throw new AuthorizationException(je);
-                        }
-                    }
-                    else {
-                        throw new AuthorizationException(ErrorCode.E0610);
-                    }
-                    for (WorkflowJobBean jobBean : jobBeans) {
-                        if (jobBean != null && !jobBean.getUser().equals(user)) {
-                            if (!isUserInAcl(user, jobBean.getGroup())) {
+                        for (WorkflowJobBean jobBean : jobBeans) {
+                            if (jobBean != null && !jobBean.getUser().equals(user)) {
+                                if (!isUserInAcl(user, jobBean.getGroup())) {
                                     incrCounter(INSTR_FAILED_AUTH_COUNTER, 1);
-                                throw new AuthorizationException(ErrorCode.E0508, user, jobBean.getId());
+                                    throw new AuthorizationException(ErrorCode.E0508, user, jobBean.getId());
+                                }
                             }
                         }
+                        break;
                     }
-                }
-                // handle bundle jobs
-                else if (jobType.equals("bundle")) {
-                    List<BundleJobBean> jobBeans = new ArrayList<BundleJobBean>();
-                    JPAService jpaService = Services.get().get(JPAService.class);
-                    if (jpaService != null) {
-                        try {
-                            jobBeans = jpaService.execute(new BundleJobInfoGetJPAExecutor(
-                                    filter, start, len)).getBundleJobs();
+                    // handle bundle jobs
+                    case "bundle": {
+                        List<BundleJobBean> jobBeans;
+                        JPAService jpaService = Services.get().get(JPAService.class);
+                        if (jpaService != null) {
+                            try {
+                                jobBeans = jpaService.execute(new BundleJobInfoGetJPAExecutor(
+                                        filter, start, len)).getBundleJobs();
+                            } catch (JPAExecutorException je) {
+                                throw new AuthorizationException(je);
+                            }
+                        } else {
+                            throw new AuthorizationException(ErrorCode.E0610);
                         }
-                        catch (JPAExecutorException je) {
-                            throw new AuthorizationException(je);
-                        }
-                    }
-                    else {
-                        throw new AuthorizationException(ErrorCode.E0610);
-                    }
-                    for (BundleJobBean jobBean : jobBeans){
-                        if (jobBean != null && !jobBean.getUser().equals(user)) {
-                            if (!isUserInAcl(user, jobBean.getGroup())) {
-                                incrCounter(INSTR_FAILED_AUTH_COUNTER, 1);
-                                throw new AuthorizationException(ErrorCode.E0509, user, jobBean.getId());
+                        for (BundleJobBean jobBean : jobBeans) {
+                            if (jobBean != null && !jobBean.getUser().equals(user)) {
+                                if (!isUserInAcl(user, jobBean.getGroup())) {
+                                    incrCounter(INSTR_FAILED_AUTH_COUNTER, 1);
+                                    throw new AuthorizationException(ErrorCode.E0509, user, jobBean.getId());
+                                }
                             }
                         }
+                        break;
                     }
-                }
-                // handle coordinator jobs
-                else {
-                    List<CoordinatorJobBean> jobBeans = new ArrayList<CoordinatorJobBean>();
-                    JPAService jpaService = Services.get().get(JPAService.class);
-                    if (jpaService != null) {
-                        try {
-                            jobBeans = jpaService.execute(new CoordJobInfoGetJPAExecutor(
-                                    filter, start, len)).getCoordJobs();
+                    // handle coordinator jobs
+                    default: {
+                        List<CoordinatorJobBean> jobBeans;
+                        JPAService jpaService = Services.get().get(JPAService.class);
+                        if (jpaService != null) {
+                            try {
+                                jobBeans = jpaService.execute(new CoordJobInfoGetJPAExecutor(
+                                        filter, start, len)).getCoordJobs();
+                            } catch (JPAExecutorException je) {
+                                throw new AuthorizationException(je);
+                            }
+                        } else {
+                            throw new AuthorizationException(ErrorCode.E0610);
                         }
-                        catch (JPAExecutorException je) {
-                            throw new AuthorizationException(je);
-                        }
-                    }
-                    else {
-                        throw new AuthorizationException(ErrorCode.E0610);
-                    }
-                    for (CoordinatorJobBean jobBean : jobBeans) {
-                        if (jobBean != null && !jobBean.getUser().equals(user)) {
-                            if (!isUserInAcl(user, jobBean.getGroup())) {
-                                incrCounter(INSTR_FAILED_AUTH_COUNTER, 1);
-                                throw new AuthorizationException(ErrorCode.E0509, user, jobBean.getId());
+                        for (CoordinatorJobBean jobBean : jobBeans) {
+                            if (jobBean != null && !jobBean.getUser().equals(user)) {
+                                if (!isUserInAcl(user, jobBean.getGroup())) {
+                                    incrCounter(INSTR_FAILED_AUTH_COUNTER, 1);
+                                    throw new AuthorizationException(ErrorCode.E0509, user, jobBean.getId());
+                                }
                             }
                         }
+                        break;
                     }
                 }
             }
@@ -601,6 +600,7 @@ public class AuthorizationService implements Service {
             }
         }
     }
+
     /**
      * Convenience method for instrumentation counters.
      *

@@ -79,11 +79,11 @@ public class MultiFileReader extends Reader {
             // gzip files
             if (files.get(index).getName().endsWith(".gz")) {
                 GZIPInputStream gzipInputStream = new GZIPInputStream(new FileInputStream(files.get(index)));
-                reader = new InputStreamReader(gzipInputStream);
+                reader = new InputStreamReader(gzipInputStream, "UTF-8");
             }
             // regular files
             else {
-                reader = new FileReader(files.get(index));
+                reader = new InputStreamReader(new FileInputStream(files.get(index)), "UTF-8");
             }
             index++;
         }

@@ -116,9 +116,12 @@ public class StringBlob {
             }
         }
         else {
-            rawBlob = string.getBytes();
+            try {
+                rawBlob = string.getBytes("UTF-8");
+            } catch (UnsupportedEncodingException e) {
+                throw new RuntimeException(e);
+            }
         }
         return rawBlob;
     }
-
 }

@@ -21,11 +21,8 @@ package org.apache.oozie.action.hadoop;
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-
-import javax.annotation.Nonnull;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
@@ -35,14 +32,6 @@ import org.apache.hadoop.mapred.JobClient;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.JobID;
 import org.apache.hadoop.mapred.RunningJob;
-import org.apache.hadoop.yarn.api.ApplicationClientProtocol;
-import org.apache.hadoop.yarn.api.protocolrecords.ApplicationsRequestScope;
-import org.apache.hadoop.yarn.api.protocolrecords.GetApplicationsRequest;
-import org.apache.hadoop.yarn.api.protocolrecords.GetApplicationsResponse;
-import org.apache.hadoop.yarn.api.records.ApplicationReport;
-import org.apache.hadoop.yarn.client.ClientRMProxy;
-import org.apache.hadoop.yarn.client.api.YarnClient;
-import org.apache.oozie.action.ActionExecutor;
 import org.apache.oozie.action.ActionExecutorException;
 import org.apache.oozie.client.WorkflowAction;
 import org.apache.oozie.service.ConfigurationService;
@@ -51,11 +40,6 @@ import org.apache.oozie.util.XLog;
 import org.apache.oozie.util.XmlUtils;
 import org.jdom.Element;
 import org.jdom.Namespace;
-
-import com.google.common.base.Function;
-import com.google.common.base.Joiner;
-import com.google.common.collect.Iterables;
-import com.google.common.io.Closeables;
 
 public class MapReduceActionExecutor extends JavaActionExecutor {
 
@@ -72,7 +56,7 @@ public class MapReduceActionExecutor extends JavaActionExecutor {
 
     @Override
     public List<Class<?>> getLauncherClasses() {
-        List<Class<?>> classes = new ArrayList<Class<?>>();
+        List<Class<?>> classes = new ArrayList<>();
         try {
             classes.add(Class.forName(STREAMING_MAIN_CLASS_NAME));
         }
@@ -131,8 +115,7 @@ public class MapReduceActionExecutor extends JavaActionExecutor {
 
     @Override
     protected Configuration createBaseHadoopConf(Context context, Element actionXml, boolean loadResources) {
-        Configuration conf = super.createBaseHadoopConf(context, actionXml, loadResources);
-        return conf;
+        return super.createBaseHadoopConf(context, actionXml, loadResources);
     }
 
     @Override
@@ -247,7 +230,7 @@ public class MapReduceActionExecutor extends JavaActionExecutor {
                     // do not store the action stats
                     if (Boolean.parseBoolean(evaluateConfigurationProperty(actionXml,
                             OOZIE_ACTION_EXTERNAL_STATS_WRITE, "false"))
-                            && (statsJsonString.getBytes().length <= getMaxExternalStatsSize())) {
+                            && (statsJsonString.getBytes("UTF-8").length <= getMaxExternalStatsSize())) {
                         context.setExecutionStats(statsJsonString);
                         log.debug(
                                 "Printing stats for Map-Reduce action as a JSON string : [{0}]", statsJsonString);
@@ -349,8 +332,8 @@ public class MapReduceActionExecutor extends JavaActionExecutor {
 
     @Override
     public void check(Context context, WorkflowAction action) throws ActionExecutorException {
-        Map<String, String> actionData = Collections.emptyMap();
-        Configuration jobConf = null;
+        Map<String, String> actionData;
+        Configuration jobConf;
 
         try {
             FileSystem actionFs = context.getAppFileSystem();
@@ -418,5 +401,4 @@ public class MapReduceActionExecutor extends JavaActionExecutor {
     void injectActionCallback(Context context, Configuration actionConf) {
         injectCallback(context, actionConf);
     }
-
 }
